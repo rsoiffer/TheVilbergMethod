@@ -41,7 +41,7 @@ public class Main {
         w.create();
 
         Player p = new Player();
-        p.position.position = new Vec3d(512, 512, 200);
+        p.position.position = new Vec3d(0, 0, 200);
         p.physics.world = w;
         p.create();
 

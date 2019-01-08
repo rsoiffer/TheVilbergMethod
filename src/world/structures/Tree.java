@@ -5,13 +5,13 @@ import static util.math.MathUtils.round;
 import util.math.Vec3d;
 import static world.ColorScheme.LEAF_FUNC;
 import static world.ColorScheme.LOG;
-import world.World;
+import world.regions.Chunk;
 
 public class Tree extends Structure {
 
-    public Tree(World world, int x, int y, double height) {
-        super(world);
-        int z = world.heightmap[x][y] + 1;
+    public Tree(Chunk chunk, int x, int y, double height) {
+        super(chunk);
+        int z = chunk.world.getHeightmap(x, y) + 1;
 
         Vec3d scale = new Vec3d(1, 1, random.nextDouble() > .5 ? 1 : .5);
         double redness = Math.pow(random.nextDouble(), 2);

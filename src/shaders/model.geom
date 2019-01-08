@@ -25,8 +25,7 @@ vec3 NORMAL_TO_DIR2[6] = vec3[](
     vec3(0., 1., 0.)
 );
 
-float maxFogDist = 1000;
-
+uniform float maxFogDist = 1000;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 

@@ -9,19 +9,18 @@ import static world.ColorScheme.LOG;
 import static world.ColorScheme.PLANKS;
 import static world.ColorScheme.PLASTER;
 import static world.ColorScheme.SLATE;
-import world.World;
+import world.regions.Chunk;
 
 public class House extends Structure {
 
     private static final int WALL_EXTENSION = 0;
 
-    public House(World world, Rectangle base) {
-        super(world);
+    public House(Chunk chunk, Rectangle base, int numFloors) {
+        super(chunk);
         priority += 10;
 
-        int z = world.heightmap[base.centerX()][base.centerY()];
+        int z = chunk.world.getHeightmap(base.centerX(), base.centerY());
         int floorHeight = 6 + random.nextInt(3);
-        int numFloors = 1 + random.nextInt(3);
         Rectangle staircase = new Rectangle(base.x + 1 + random.nextInt(base.w - 6), base.y + 1 + random.nextInt(base.h - 6), 4, 4);
 
         for (int floor = 0; floor < numFloors; floor++) {
@@ -70,8 +69,8 @@ public class House extends Structure {
 
         for (int i = base.x; i <= base.maxX(); i++) {
             for (int j = base.y; j <= base.maxY(); j++) {
-                if (world.heightmap[i][j] < z) {
-                    blocks.setRange(i, j, world.heightmap[i][j], z - 1, ERROR);
+                if (chunk.world.getHeightmap(i, j) < z) {
+                    blocks.setRange(i, j, chunk.world.getHeightmap(i, j), z - 1, ERROR);
                 }
             }
         }

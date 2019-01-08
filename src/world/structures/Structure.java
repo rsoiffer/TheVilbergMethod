@@ -15,22 +15,22 @@ import util.math.Vec3d;
 import util.rlestorage.IntConverter.Vec3dConverter;
 import util.rlestorage.RLEMapStorage;
 import util.rlestorage.RLEStorage;
-import world.World;
+import world.regions.Chunk;
 
 public class Structure implements Comparable<Structure> {
 
-    public final World world;
+    public final Chunk chunk;
     public final Random random;
     public final RLEStorage<Vec3d> blocks;
     public double priority;
 
     private Vec3d maxPos, minPos;
 
-    public Structure(World world) {
-        this.world = world;
-        random = world.random;
+    public Structure(Chunk chunk) {
+        this.chunk = chunk;
+        random = chunk.random;
         blocks = new RLEMapStorage(new Vec3dConverter());
-        priority = random.nextDouble();
+        priority = chunk.random.nextDouble();
     }
 
     public void buildCorners(Rectangle r, int zMin, int zMax, Vec3d color) {
@@ -65,7 +65,7 @@ public class Structure implements Comparable<Structure> {
                 }
             }
         } else {
-            boolean roofDir = random.nextDouble() < .5;
+            boolean roofDir = chunk.random.nextDouble() < .5;
             for (int i = -1; i < r.w + 2; i++) {
                 for (int j = -1; j < r.h + 2; j++) {
                     int roofHeight = z + (roofDir ? min(i + 1, r.w + 1 - i, maxRoofHeight) : min(j + 1, r.h + 1 - j, maxRoofHeight));

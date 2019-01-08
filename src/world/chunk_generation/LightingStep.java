@@ -1,4 +1,4 @@
-package world;
+package world.chunk_generation;
 
 import static graphics.voxels.VoxelRenderer.DIRS;
 import graphics.voxels.VoxelRenderer.VoxelFaceInfo;
@@ -11,19 +11,24 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import static util.math.MathUtils.ceil;
 import static util.math.MathUtils.floor;
+import static util.math.MathUtils.mod;
 import util.math.Vec3d;
 import util.rlestorage.IntConverter;
 import static util.rlestorage.IntConverter.pack;
 import static util.rlestorage.IntConverter.unpack;
 import util.rlestorage.RLEArrayStorage;
 import util.rlestorage.RLEStorage;
-import static world.World.WORLD_SIZE;
+import world.World;
+import world.regions.Chunk;
+import static world.regions.Chunk.CHUNK_SIZE;
+import world.regions.GenerationStep;
 
-public class Lighting {
+public class LightingStep extends GenerationStep<Chunk> {
 
-    private static final int SUNLIGHT = 40;
+    private static final Object LIGHTING_LOCK = new Object();
+
+    public static final int SUNLIGHT = 40;
     private static final int LARGE_Z = 1000000;
-    private static final boolean SKIP_AO = false;
 
     private static final Vec3d DIRECTIONAL_LIGHTING_1 = new Vec3d(.92, .97, 1);
     private static final Vec3d DIRECTIONAL_LIGHTING_2 = new Vec3d(.88, .83, .8);
@@ -31,56 +36,32 @@ public class Lighting {
     private static final LightFunc DARK_LF = new LightFunc(0, 0);
     private static final LightFunc SUNLIGHT_LF = new LightFunc(SUNLIGHT, 0);
 
-    private final RLEStorage<Vec3d> worldBlocks;
-    private final RLEStorage<LightFunc> light;
+    public RLEStorage<LightFunc> light = new RLEArrayStorage(CHUNK_SIZE, new LightFuncConverter());
 
-    public Lighting(RLEStorage<Vec3d> worldBlocks) {
-        this.worldBlocks = worldBlocks;
-        light = new RLEArrayStorage(WORLD_SIZE, new LightFuncConverter());
+    public LightingStep(Chunk region) {
+        super(region);
+    }
 
-        Queue<LightRay> toUpdate = new LinkedList();
-        for (int x = 0; x < WORLD_SIZE; x++) {
-            for (int y = 0; y < WORLD_SIZE; y++) {
-                int z = worldBlocks.columnAt(x, y).maxPos();
-                light.setRange(x, y, -LARGE_Z, worldBlocks.columnAt(x, y).maxPos(), DARK_LF);
-                toUpdate.add(new LightRay(x, y, z, LARGE_Z, SUNLIGHT_LF));
-            }
-        }
+    @Override
+    public void cleanup() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
-        while (!toUpdate.isEmpty()) {
-            LightRay lr = toUpdate.poll();
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 2; j++) {
-                    int newX = lr.x - 1 + i + j;
-                    int newY = lr.y - i + j;
-                    if (newX >= 0 && newY >= 0 && newX < WORLD_SIZE && newY < WORLD_SIZE) {
-                        Iterator<Entry<Integer, Vec3d>> iter = worldBlocks.columnAt(newX, newY).iterator();
-                        Entry<Integer, Vec3d> prev = iter.next();
-                        while (iter.hasNext()) {
-                            Entry<Integer, Vec3d> current = iter.next();
-                            if (prev.getValue() != null && current.getValue() == null) {
-                                int zMin = Math.max(lr.zMin, prev.getKey() + 1);
-                                int zMax = Math.min(lr.zMax, current.getKey());
-                                if (lr.lf.lightAt(zMin) == 1) {
-                                    zMin++;
-                                }
-                                if (lr.lf.lightAt(zMax) == 1) {
-                                    zMax--;
-                                }
-                                if (zMin <= zMax) {
-                                    LightRay newLR = new LightRay(newX, newY, zMin, zMax, lr.lf.add(-1));
-                                    newLR.update(this, toUpdate, prev.getKey() + 1, current.getKey());
-                                }
-                            }
-                            prev = current;
-                        }
-                    }
+    @Override
+    public void generate() {
+        RLEStorage<Vec3d> chunkBlocks = region.require(ConstructionStep.class).blocks;
+        synchronized (LIGHTING_LOCK) {
+            light = new RLEArrayStorage(CHUNK_SIZE, new LightFuncConverter());
+            for (int x = 0; x < CHUNK_SIZE; x++) {
+                for (int y = 0; y < CHUNK_SIZE; y++) {
+                    int z = chunkBlocks.columnAt(x, y).maxPos();
+                    light.setRange(x, y, -LARGE_Z, z, DARK_LF);
                 }
             }
         }
     }
 
-    public float[] ambientOcclusion(VoxelFaceInfo vfi, Vec3d dir) {
+    public static float[] ambientOcclusion(World world, VoxelFaceInfo vfi, Vec3d dir) {
         int size = 3;
 
         Vec3d pos = new Vec3d(vfi.x, vfi.y, vfi.z).add(dir);
@@ -93,8 +74,8 @@ public class Lighting {
         for (int i = -size; i <= size; i++) {
             for (int j = -size; j <= size; j++) {
                 Vec3d v = pos.add(dir1.mul(i)).add(dir2.mul(j));
-                solid[i + size][j + size] = worldBlocks.get((int) v.x, (int) v.y, (int) v.z) != null;
-                lightLevel[i + size][j + size] = lightAt(v);
+                solid[i + size][j + size] = world.getBlock(v) != null;
+                lightLevel[i + size][j + size] = world.getLight(v);
             }
         }
 
@@ -119,7 +100,7 @@ public class Lighting {
         return returnVals;
     }
 
-    private Vec3d aoQuadrant(int size, boolean[][] solid, double[][] lightLevel, int x1, int y1, int dx, int dy) {
+    private static Vec3d aoQuadrant(int size, boolean[][] solid, double[][] lightLevel, int x1, int y1, int dx, int dy) {
         double totalLight = 0;
         double numEmpty = 0;
         double numSolid = 0;
@@ -142,16 +123,53 @@ public class Lighting {
         return new Vec3d(totalLight, numEmpty, numSolid);
     }
 
-    public int lightAt(int x, int y, int z) {
-        LightFunc lf = light.get(x, y, z);
-        if (lf == null) {
-            return SUNLIGHT;
+    public void propagateInitial() {
+        RLEStorage<Vec3d> chunkBlocks = region.require(ConstructionStep.class).blocks;
+        synchronized (LIGHTING_LOCK) {
+            Queue<LightRay> toUpdate = new LinkedList();
+            for (int x = 0; x < CHUNK_SIZE; x++) {
+                for (int y = 0; y < CHUNK_SIZE; y++) {
+                    int z = chunkBlocks.columnAt(x, y).maxPos();
+                    toUpdate.add(new LightRay(region.worldX() + x, region.worldY() + y, z + 1, LARGE_Z, SUNLIGHT_LF));
+                }
+            }
+            updateLighting(world, toUpdate);
         }
-        return lf.lightAtZero + z * lf.lightSlope;
     }
 
-    public int lightAt(Vec3d pos) {
-        return lightAt((int) pos.x, (int) pos.y, (int) pos.z);
+    private static void updateLighting(World world, Queue<LightRay> toUpdate) {
+        while (!toUpdate.isEmpty()) {
+            LightRay lr = toUpdate.poll();
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    int newX = lr.x - 1 + i + j;
+                    int newY = lr.y - i + j;
+                    if (world.chunkManager.has(new Vec3d(newX, newY, 0), LightingStep.class, true)) {
+                        Iterator<Entry<Integer, Vec3d>> iter = world.chunkManager.get(new Vec3d(newX, newY, 0),
+                                ConstructionStep.class).blocks.columnAt(mod(newX, CHUNK_SIZE), mod(newY, CHUNK_SIZE)).iterator();
+                        Entry<Integer, Vec3d> prev = iter.next();
+                        while (iter.hasNext()) {
+                            Entry<Integer, Vec3d> current = iter.next();
+                            if (prev.getValue() != null && current.getValue() == null) {
+                                int zMin = Math.max(lr.zMin, prev.getKey() + 1);
+                                int zMax = Math.min(lr.zMax, current.getKey());
+                                if (lr.lf.lightAt(zMin) == 1) {
+                                    zMin++;
+                                }
+                                if (lr.lf.lightAt(zMax) == 1) {
+                                    zMax--;
+                                }
+                                if (zMin <= zMax) {
+                                    LightRay newLR = new LightRay(newX, newY, zMin, zMax, lr.lf.add(-1));
+                                    newLR.update(world, toUpdate, prev.getKey() + 1, current.getKey());
+                                }
+                            }
+                            prev = current;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static class LightFunc {
@@ -224,9 +242,9 @@ public class Lighting {
             this.lf = lf;
         }
 
-        private void create(Lighting lighting, Queue<LightRay> toUpdate) {
+        private void create(World world, Queue<LightRay> toUpdate) {
             toUpdate.add(this);
-            lighting.light.setRange(x, y, zMin, zMax, lf);
+            world.chunkManager.get(new Vec3d(x, y, 0), LightingStep.class).light.setRange(mod(x, CHUNK_SIZE), mod(y, CHUNK_SIZE), zMin, zMax, lf);
         }
 
         @Override
@@ -234,12 +252,12 @@ public class Lighting {
             return "LightRay{" + "x=" + x + ", y=" + y + ", zMin=" + zMin + ", zMax=" + zMax + ", lf=" + lf + '}';
         }
 
-        private void update(Lighting lighting, Queue<LightRay> toUpdate, int spaceMin, int spaceMax) {
+        private void update(World world, Queue<LightRay> toUpdate, int spaceMin, int spaceMax) {
             if (lf.lightSlope == 1 && Math.max(spaceMin, lf.zero() + 1) < zMin) {
-                new LightRay(x, y, Math.max(spaceMin, (int) lf.zero() + 1), zMax, lf).update(lighting, toUpdate, spaceMin, spaceMax);
+                new LightRay(x, y, Math.max(spaceMin, (int) lf.zero() + 1), zMax, lf).update(world, toUpdate, spaceMin, spaceMax);
                 return;
             } else if (lf.lightSlope == -1 && Math.min(spaceMax, lf.zero() - 1) > zMax) {
-                new LightRay(x, y, zMin, Math.min(spaceMax, (int) lf.zero() - 1), lf).update(lighting, toUpdate, spaceMin, spaceMax);
+                new LightRay(x, y, zMin, Math.min(spaceMax, (int) lf.zero() - 1), lf).update(world, toUpdate, spaceMin, spaceMax);
                 return;
             }
             List<LightRay> newRays = new LinkedList();
@@ -252,7 +270,8 @@ public class Lighting {
             }
 
             List<Entry<Integer, LightFunc>> existing = new LinkedList();
-            lighting.light.columnAt(x, y).forEach(existing::add);
+            world.chunkManager.get(new Vec3d(x, y, 0), LightingStep.class).light
+                    .columnAt(mod(x, CHUNK_SIZE), mod(y, CHUNK_SIZE)).forEach(existing::add);
             Iterator<Entry<Integer, LightFunc>> iter = existing.iterator();
             Entry<Integer, LightFunc> prev = iter.next();
             while (iter.hasNext()) {
@@ -263,17 +282,17 @@ public class Lighting {
                     if (partZMin <= partZMax) {
                         if (newLR.lf.lightAt(partZMin) > current.getValue().lightAt(partZMin)) {
                             if (newLR.lf.lightAt(partZMax) >= current.getValue().lightAt(partZMax)) {
-                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(lighting, toUpdate);
+                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(world, toUpdate);
                             } else {
                                 partZMax = floor(newLR.lf.sub(current.getValue()).zero());
-                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(lighting, toUpdate);
+                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(world, toUpdate);
                             }
                         } else if (newLR.lf.lightAt(partZMax) > current.getValue().lightAt(partZMax)) {
                             if (newLR.lf.lightAt(partZMin) >= current.getValue().lightAt(partZMin)) {
-                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(lighting, toUpdate);
+                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(world, toUpdate);
                             } else {
                                 partZMin = ceil(newLR.lf.sub(current.getValue()).zero());
-                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(lighting, toUpdate);
+                                new LightRay(x, y, partZMin, partZMax, newLR.lf).create(world, toUpdate);
                             }
                         }
                     }

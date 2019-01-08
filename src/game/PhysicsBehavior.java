@@ -9,7 +9,6 @@ import static util.math.MathUtils.ceil;
 import static util.math.MathUtils.floor;
 import util.math.Vec3d;
 import world.World;
-import static world.World.WORLD_SIZE;
 
 public class PhysicsBehavior extends Behavior {
 
@@ -149,10 +148,8 @@ public class PhysicsBehavior extends Behavior {
         Vec3d hitboxSize2Real = crouch ? hitboxSize2Crouch : hitboxSize2;
         for (int x = floor(pos.x - hitboxSize1Real.x); x < pos.x + hitboxSize2Real.x; x++) {
             for (int y = floor(pos.y - hitboxSize1Real.y); y < pos.y + hitboxSize2Real.y; y++) {
-                if (x >= 0 && x < WORLD_SIZE && y >= 0 && y < WORLD_SIZE) {
-                    if (!world.worldBlocks.rangeEquals(x, y, floor(pos.z - hitboxSize1Real.z), ceil(pos.z + hitboxSize2Real.z) - 1, null)) {
-                        return true;
-                    }
+                if (!world.getBlockRangeEquals(x, y, floor(pos.z - hitboxSize1Real.z), ceil(pos.z + hitboxSize2Real.z) - 1, null)) {
+                    return true;
                 }
             }
         }
