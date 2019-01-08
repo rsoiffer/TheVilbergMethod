@@ -25,9 +25,14 @@ public class RegionManager<U extends AbstractRegion> {
         size = constructor.apply(null, null).size();
     }
 
-    public List<RegionPos> allGenerated(Class<? extends GenerationStep<U>> c) {
-        return regions.entrySet().stream().filter(e -> e.getValue().stepFinished(c))
-                .map(Map.Entry::getKey).collect(Collectors.toList());
+    public List<RegionPos> allGenerated(Class<? extends GenerationStep<U>> c, boolean requireFinished) {
+        if (requireFinished) {
+            return regions.entrySet().stream().filter(e -> e.getValue().stepFinished(c))
+                    .map(Map.Entry::getKey).collect(Collectors.toList());
+        } else {
+            return regions.entrySet().stream().filter(e -> e.getValue().stepCreated(c))
+                    .map(Map.Entry::getKey).collect(Collectors.toList());
+        }
     }
 
     public Stream<RegionPos> border(Class<? extends GenerationStep<U>> c) {

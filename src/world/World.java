@@ -9,6 +9,7 @@ import static graphics.voxels.VoxelModel.MODEL_SHADER;
 import graphics.voxels.VoxelRenderer;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import util.Multithreader;
@@ -20,6 +21,7 @@ import util.math.Vec3d;
 import util.rlestorage.RLEColumn;
 import world.chunk_generation.ConstructionStep;
 import world.chunk_generation.HeightmapStep;
+import world.chunk_generation.LightingPropagationStep;
 import world.chunk_generation.LightingStep;
 import world.chunk_generation.LightingStep.LightFunc;
 import static world.chunk_generation.LightingStep.SUNLIGHT;
@@ -36,10 +38,11 @@ public class World extends Behavior {
     public static final int UNLOAD_DISTANCE = 1000;
 
     public final long seed = new Random().nextLong();
-
     public final RegionManager<Chunk> chunkManager = new RegionManager<>(this, Chunk::new);
     public final RegionManager<Province> provinceManager = new RegionManager<>(this, Province::new);
+
     private final HashMap<String, Noise> noiseMap = new HashMap();
+    private final HashSet<RegionPos> renderBorder = new HashSet();
 
     public Vec3d getBlock(Vec3d v) {
         return chunkManager.get(v, ConstructionStep.class).blocks.get(mod((int) v.x, CHUNK_SIZE), mod((int) v.y, CHUNK_SIZE), (int) v.z);
@@ -58,6 +61,7 @@ public class World extends Behavior {
     }
 
     public int getLight(Vec3d v) {
+        chunkManager.getPos(v).nearby(1).forEach(rp -> chunkManager.get(rp, LightingPropagationStep.class));
         LightFunc lf = chunkManager.get(v, LightingStep.class).light.get(mod((int) v.x, CHUNK_SIZE), mod((int) v.y, CHUNK_SIZE), (int) v.z);
         if (lf == null) {
             return SUNLIGHT;
@@ -80,16 +84,23 @@ public class World extends Behavior {
     @Override
     public void step() {
         RegionPos camera = chunkManager.getPos(Camera.camera3d.position);
-        chunkManager.get(camera, RenderStep.class);
+        if (!chunkManager.has(camera, RenderStep.class, true)) {
+            chunkManager.get(camera, RenderStep.class);
+            renderBorder.addAll(camera.nearby(1));
+        }
         chunkManager.removeDistant(camera);
 
-        Optional<RegionPos> nearestUnloaded = chunkManager.border(RenderStep.class)
+        renderBorder.removeIf(rp -> chunkManager.has(rp, RenderStep.class, false));
+
+//        Optional<RegionPos> nearestUnloaded = chunkManager.border(RenderStep.class)
+//                .min(Comparator.comparingDouble(camera::distance));
+        Optional<RegionPos> nearestUnloaded = renderBorder.stream()
                 .min(Comparator.comparingDouble(camera::distance));
         if (nearestUnloaded.isPresent()) {
             MODEL_SHADER.setUniform("maxFogDist", (float) camera.distance(nearestUnloaded.get()) * CHUNK_SIZE);
         }
 
-        chunkManager.allGenerated(RenderStep.class).forEach(cp -> {
+        chunkManager.allGenerated(RenderStep.class, true).forEach(cp -> {
             VoxelRenderer renderer = chunkManager.get(cp, RenderStep.class).renderer;
             renderer.render(Transformation.create(new Vec3d(0, 0, 0), Quaternion.IDENTITY, 1), WHITE);
         });
@@ -97,6 +108,7 @@ public class World extends Behavior {
         if (Multithreader.isFree()) {
             if (nearestUnloaded.isPresent() && camera.distance(nearestUnloaded.get()) * CHUNK_SIZE <= RENDER_DISTANCE) {
                 chunkManager.lazyGenerate(nearestUnloaded.get(), RenderStep.class);
+                renderBorder.addAll(nearestUnloaded.get().nearby(1));
             }
         }
     }

@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import util.math.Vec2d;
 import util.math.Vec3d;
+import world.LightingCalculator;
 import world.regions.Chunk;
 import static world.regions.Chunk.CHUNK_SIZE;
 import world.regions.GenerationStep;
@@ -27,9 +28,6 @@ public class RenderStep extends GenerationStep<Chunk> {
 
     @Override
     public void generate() {
-        region.pos.nearby(2).forEach(rp -> world.chunkManager.get(rp, LightingStep.class));
-        region.pos.nearby(1).forEach(rp -> world.chunkManager.get(rp, LightingStep.class).propagateInitial());
-
         List<Vec2d> toDraw = new LinkedList();
         for (int i = 0; i < CHUNK_SIZE; i++) {
             for (int j = 0; j < CHUNK_SIZE; j++) {
@@ -47,7 +45,7 @@ public class RenderStep extends GenerationStep<Chunk> {
             float r = (float) vfi.voxel.x;
             float g = (float) vfi.voxel.y;
             float b = (float) vfi.voxel.z;
-            float[] ao = LightingStep.ambientOcclusion(world, vfi, dir);
+            float[] ao = LightingCalculator.ambientOcclusion(world, vfi, dir);
             return new float[]{
                 vfi.x, vfi.y, vfi.z,
                 normal,
