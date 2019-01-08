@@ -29,8 +29,8 @@ public class StructureStep extends GenerationStep<Chunk> {
     @Override
     public void generate() {
         PoissonDiskStep poisson = region.require(PoissonDiskStep.class);
-        for (Vec2d v : poisson.getPoints(20)) {
-            structures.add(new Tree(region, (int) v.x, (int) v.y, 20));
+        for (Vec2d v : poisson.getPoints(10)) {
+            structures.add(new Tree(region, v.x, v.y, 20));
         }
         for (RegionPos rp : world.provinceManager.getPos(region.worldCenter()).nearby(1)) {
             for (Landmark l : world.provinceManager.get(rp, LandmarkStep.class).landmarks) {

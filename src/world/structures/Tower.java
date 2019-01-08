@@ -12,7 +12,7 @@ public class Tower extends Structure {
         super(chunk);
         priority += 20;
 
-        int z = chunk.world.getHeightmap(base.centerX(), base.centerY());
+        int z = chunk.world.getFlattenedHeightmap(base.centerX(), base.centerY());
         int numFloors = 2;
         int floorHeight = 10;
         for (int i = 0; i <= numFloors; i++) {

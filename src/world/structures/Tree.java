@@ -9,9 +9,9 @@ import world.regions.Chunk;
 
 public class Tree extends Structure {
 
-    public Tree(Chunk chunk, int x, int y, double height) {
+    public Tree(Chunk chunk, double x, double y, double height) {
         super(chunk);
-        int z = chunk.world.getHeightmap(x, y) + 1;
+        int z = chunk.world.getFlattenedHeightmap(floor(x), floor(y)) + 1;
 
         Vec3d scale = new Vec3d(1, 1, random.nextDouble() > .5 ? 1 : .5);
         double redness = Math.pow(random.nextDouble(), 2);
@@ -39,11 +39,10 @@ public class Tree extends Structure {
             }
         }
 
-        blocks.setRange(x, y, z, z + (int) height, LOG);
-        if (random.nextDouble() < (height - 10) / 5.) {
-            blocks.setRange(x - 1, y, z, z + (int) height, LOG);
-            blocks.setRange(x, y - 1, z, z + (int) height, LOG);
-            blocks.setRange(x - 1, y - 1, z, z + (int) height, LOG);
+        for (int i = round(x - 1); i <= round(x); i++) {
+            for (int j = round(y - 1); j <= round(y); j++) {
+                blocks.setRange(i, j, z - 3, z + (int) height, LOG);
+            }
         }
     }
 

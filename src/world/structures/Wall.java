@@ -14,8 +14,8 @@ public class Wall extends Structure {
         if (horizontal) {
             for (int i = base.x; i <= base.maxX(); i++) {
                 for (int j = base.y; j <= base.maxY(); j++) {
-                    int z = chunk.world.getHeightmap(i, base.centerY()) + height;
-                    blocks.setRange(i, j, chunk.world.getHeightmap(i, j) + 1, z, STONE);
+                    int z = chunk.world.getFlattenedHeightmap(i, base.centerY()) + height;
+                    blocks.setRange(i, j, chunk.world.getFlattenedHeightmap(i, j) + 1, z, STONE);
                     if (j > base.y && j < base.maxY()) {
                         blocks.set(i, j, z, PLANKS);
                     } else {
@@ -26,8 +26,8 @@ public class Wall extends Structure {
         } else {
             for (int i = base.x; i <= base.maxX(); i++) {
                 for (int j = base.y; j <= base.maxY(); j++) {
-                    int z = chunk.world.getHeightmap(base.centerX(), j) + height;
-                    blocks.setRange(i, j, chunk.world.getHeightmap(i, j) + 1, z, STONE);
+                    int z = chunk.world.getFlattenedHeightmap(base.centerX(), j) + height;
+                    blocks.setRange(i, j, chunk.world.getFlattenedHeightmap(i, j) + 1, z, STONE);
                     if (i > base.x && i < base.maxX()) {
                         blocks.set(i, j, z, PLANKS);
                     } else {

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.ToDoubleFunction;
 import util.Multithreader;
 import util.Noise;
 import static util.math.MathUtils.mod;
@@ -20,6 +21,7 @@ import util.math.Transformation;
 import util.math.Vec3d;
 import util.rlestorage.RLEColumn;
 import world.chunk_generation.ConstructionStep;
+import world.chunk_generation.HeightmapFlatteningStep;
 import world.chunk_generation.HeightmapStep;
 import world.chunk_generation.LightingPropagationStep;
 import world.chunk_generation.LightingStep;
@@ -34,8 +36,8 @@ import world.regions.RegionPos;
 
 public class World extends Behavior {
 
-    public static final int RENDER_DISTANCE = 750;
-    public static final int UNLOAD_DISTANCE = 1000;
+    public static final int RENDER_DISTANCE = 500;
+    public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 500;
 
     public final long seed = new Random().nextLong();
     public final RegionManager<Chunk> chunkManager = new RegionManager<>(this, Chunk::new);
@@ -56,7 +58,11 @@ public class World extends Behavior {
         return chunkManager.get(new Vec3d(x, y, 0), ConstructionStep.class).blocks.rangeEquals(mod(x, CHUNK_SIZE), mod(y, CHUNK_SIZE), zMin, zMax, v);
     }
 
-    public int getHeightmap(int x, int y) {
+    public int getFlattenedHeightmap(int x, int y) {
+        return chunkManager.get(new Vec3d(x, y, 0), HeightmapFlatteningStep.class).flattenedHeightmap[mod(x, CHUNK_SIZE)][mod(y, CHUNK_SIZE)];
+    }
+
+    public double getHeightmap(int x, int y) {
         return chunkManager.get(new Vec3d(x, y, 0), HeightmapStep.class).heightmap[mod(x, CHUNK_SIZE)][mod(y, CHUNK_SIZE)];
     }
 
@@ -76,6 +82,10 @@ public class World extends Behavior {
         return noiseMap.get(name);
     }
 
+    public double getRivermap(int x, int y) {
+        return chunkManager.get(new Vec3d(x, y, 0), HeightmapStep.class).rivermap[mod(x, CHUNK_SIZE)][mod(y, CHUNK_SIZE)];
+    }
+
     @Override
     public Layer layer() {
         return RENDER3D;
@@ -83,28 +93,33 @@ public class World extends Behavior {
 
     @Override
     public void step() {
-        RegionPos camera = chunkManager.getPos(Camera.camera3d.position);
-        if (!chunkManager.has(camera, RenderStep.class, true)) {
-            chunkManager.get(camera, RenderStep.class);
-            renderBorder.addAll(camera.nearby(1));
-        }
-        chunkManager.removeDistant(camera);
+        ToDoubleFunction<RegionPos> distanceToChunk = rp -> Camera.camera3d.position
+                .sub(new Vec3d(rp.x + .5, rp.y + .5, 0).mul(CHUNK_SIZE)).setZ(0).length();
 
+        // Load camera chunk
+        RegionPos camera = chunkManager.getPos(Camera.camera3d.position);
+        chunkManager.get(camera, RenderStep.class);
+        renderBorder.addAll(camera.nearby(1));
         renderBorder.removeIf(rp -> chunkManager.has(rp, RenderStep.class, false));
 
-//        Optional<RegionPos> nearestUnloaded = chunkManager.border(RenderStep.class)
-//                .min(Comparator.comparingDouble(camera::distance));
-        Optional<RegionPos> nearestUnloaded = renderBorder.stream()
-                .min(Comparator.comparingDouble(camera::distance));
+        // Unload distant chunks
+        chunkManager.removeIf(rp -> distanceToChunk.applyAsDouble(rp) > UNLOAD_DISTANCE);
+
+        // Find nearest unloaded chunk
+        Optional<RegionPos> nearestUnloaded = renderBorder.stream().min(Comparator.comparingDouble(distanceToChunk));
         if (nearestUnloaded.isPresent()) {
-            MODEL_SHADER.setUniform("maxFogDist", (float) camera.distance(nearestUnloaded.get()) * CHUNK_SIZE);
+            MODEL_SHADER.setUniform("maxFogDist", 1 * (float) distanceToChunk.applyAsDouble(nearestUnloaded.get()));
         }
 
+        // Render chunks
         chunkManager.allGenerated(RenderStep.class, true).forEach(cp -> {
-            VoxelRenderer renderer = chunkManager.get(cp, RenderStep.class).renderer;
-            renderer.render(Transformation.create(new Vec3d(0, 0, 0), Quaternion.IDENTITY, 1), WHITE);
+            if (camera.distance(cp) * CHUNK_SIZE <= RENDER_DISTANCE) {
+                VoxelRenderer renderer = chunkManager.get(cp, RenderStep.class).renderer;
+                renderer.render(Transformation.create(new Vec3d(0, 0, 0), Quaternion.IDENTITY, 1), WHITE);
+            }
         });
 
+        // Load new chunks
         if (Multithreader.isFree()) {
             if (nearestUnloaded.isPresent() && camera.distance(nearestUnloaded.get()) * CHUNK_SIZE <= RENDER_DISTANCE) {
                 chunkManager.lazyGenerate(nearestUnloaded.get(), RenderStep.class);

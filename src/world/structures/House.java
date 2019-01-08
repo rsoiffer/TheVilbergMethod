@@ -19,7 +19,7 @@ public class House extends Structure {
         super(chunk);
         priority += 10;
 
-        int z = chunk.world.getHeightmap(base.centerX(), base.centerY());
+        int z = chunk.world.getFlattenedHeightmap(base.centerX(), base.centerY());
         int floorHeight = 6 + random.nextInt(3);
         Rectangle staircase = new Rectangle(base.x + 1 + random.nextInt(base.w - 6), base.y + 1 + random.nextInt(base.h - 6), 4, 4);
 
@@ -69,8 +69,8 @@ public class House extends Structure {
 
         for (int i = base.x; i <= base.maxX(); i++) {
             for (int j = base.y; j <= base.maxY(); j++) {
-                if (chunk.world.getHeightmap(i, j) < z) {
-                    blocks.setRange(i, j, chunk.world.getHeightmap(i, j), z - 1, ERROR);
+                if (chunk.world.getFlattenedHeightmap(i, j) < z) {
+                    blocks.setRange(i, j, chunk.world.getFlattenedHeightmap(i, j), z - 1, ERROR);
                 }
             }
         }

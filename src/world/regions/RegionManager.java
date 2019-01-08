@@ -4,13 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import util.Multithreader;
 import static util.math.MathUtils.floor;
 import util.math.Vec3d;
 import world.World;
-import static world.World.UNLOAD_DISTANCE;
 
 public class RegionManager<U extends AbstractRegion> {
 
@@ -35,20 +34,17 @@ public class RegionManager<U extends AbstractRegion> {
         }
     }
 
-    public Stream<RegionPos> border(Class<? extends GenerationStep<U>> c) {
-        return regions.keySet().stream().flatMap(rp -> rp.nearby(1).stream())
-                .filter(rp -> shouldBeBorder(rp, c));
-    }
-
     public <T extends GenerationStep<U>> T get(Vec3d pos, Class<T> c) {
         return get(getPos(pos), c);
     }
 
     public <T extends GenerationStep<U>> T get(RegionPos pos, Class<T> c) {
-        if (!regions.containsKey(pos)) {
-            regions.put(pos, constructor.apply(world, pos));
+        U region = regions.get(pos);
+        if (region == null) {
+            region = constructor.apply(world, pos);
+            regions.put(pos, region);
         }
-        return (T) regions.get(pos).require(c);
+        return region.require(c);
     }
 
     public RegionPos getPos(Vec3d pos) {
@@ -88,9 +84,9 @@ public class RegionManager<U extends AbstractRegion> {
         }
     }
 
-    public void removeDistant(RegionPos camera) {
+    public void removeIf(Predicate<RegionPos> condition) {
         for (RegionPos pos : regions.keySet()) {
-            if (camera.distance(pos) * size > UNLOAD_DISTANCE) {
+            if (condition.test(pos)) {
                 remove(pos);
             }
         }

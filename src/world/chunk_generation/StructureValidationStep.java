@@ -7,11 +7,11 @@ import world.regions.GenerationStep;
 import world.regions.RegionPos;
 import world.structures.Structure;
 
-public class FinalStructureStep extends GenerationStep<Chunk> {
+public class StructureValidationStep extends GenerationStep<Chunk> {
 
-    public final List<Structure> structures = new LinkedList();
+    public final List<Structure> validStructures = new LinkedList();
 
-    public FinalStructureStep(Chunk region) {
+    public StructureValidationStep(Chunk region) {
         super(region);
     }
 
@@ -34,7 +34,7 @@ public class FinalStructureStep extends GenerationStep<Chunk> {
                 }
             }
             if (keep) {
-                structures.add(s);
+                validStructures.add(s);
             }
         }
     }

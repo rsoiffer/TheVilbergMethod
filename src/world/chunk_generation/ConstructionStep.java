@@ -33,13 +33,18 @@ public class ConstructionStep extends GenerationStep<Chunk> {
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int y = 0; y < CHUNK_SIZE; y++) {
                 int worldX = x + region.worldX(), worldY = y + region.worldY();
-                Vec3d colorNoise = new Vec3d(colorR.fbm2d(worldX, worldY, 2, .01), colorG.fbm2d(worldX, worldY, 2, .01), colorB.fbm2d(worldX, worldY, 2, .01));
-                blocks.setRangeInfinite(x, y, world.getHeightmap(worldX, worldY), LAND_FUNC.apply(colorNoise));
+                int z = world.getFlattenedHeightmap(worldX, worldY);
+                if (world.getRivermap(worldX, worldY) < .005) {
+                    blocks.setRangeInfinite(x, y, z, new Vec3d(.3, .6, 1));
+                } else {
+                    Vec3d colorNoise = new Vec3d(colorR.fbm2d(worldX, worldY, 2, .01), colorG.fbm2d(worldX, worldY, 2, .01), colorB.fbm2d(worldX, worldY, 2, .01));
+                    blocks.setRangeInfinite(x, y, z, LAND_FUNC.apply(colorNoise));
+                }
             }
         }
 
         for (RegionPos cp : region.pos.nearby(1)) {
-            for (Structure s : world.chunkManager.get(cp, FinalStructureStep.class).structures) {
+            for (Structure s : world.chunkManager.get(cp, StructureValidationStep.class).validStructures) {
                 s.blocks.copyTo(blocks, -region.worldX(), -region.worldY(), 0);
             }
         }
