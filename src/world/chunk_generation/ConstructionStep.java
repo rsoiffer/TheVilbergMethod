@@ -39,6 +39,7 @@ public class ConstructionStep extends GenerationStep<Chunk> {
                 } else {
                     Vec3d colorNoise = new Vec3d(colorR.fbm2d(worldX, worldY, 2, .01), colorG.fbm2d(worldX, worldY, 2, .01), colorB.fbm2d(worldX, worldY, 2, .01));
                     blocks.setRangeInfinite(x, y, z, LAND_FUNC.apply(colorNoise));
+                    blocks.setRangeInfinite(x, y, z - 1, new Vec3d(1, .6, .2));
                 }
             }
         }

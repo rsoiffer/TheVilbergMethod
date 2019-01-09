@@ -36,6 +36,7 @@ import world.regions.RegionPos;
 
 public class World extends Behavior {
 
+    public static final double FOG_MULT = 10;
     public static final int RENDER_DISTANCE = 500;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 500;
 
@@ -108,7 +109,7 @@ public class World extends Behavior {
         // Find nearest unloaded chunk
         Optional<RegionPos> nearestUnloaded = renderBorder.stream().min(Comparator.comparingDouble(distanceToChunk));
         if (nearestUnloaded.isPresent()) {
-            MODEL_SHADER.setUniform("maxFogDist", 1 * (float) distanceToChunk.applyAsDouble(nearestUnloaded.get()));
+            MODEL_SHADER.setUniform("maxFogDist", (float) (FOG_MULT * distanceToChunk.applyAsDouble(nearestUnloaded.get())));
         }
 
         // Render chunks
