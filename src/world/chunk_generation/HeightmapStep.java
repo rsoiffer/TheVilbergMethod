@@ -7,7 +7,7 @@ import world.regions.GenerationStep;
 public class HeightmapStep extends GenerationStep<Chunk> {
 
     public double[][] heightmap = new double[CHUNK_SIZE][CHUNK_SIZE];
-    public double[][] rivermap = new double[CHUNK_SIZE][CHUNK_SIZE];
+    public boolean[][] rivermap = new boolean[CHUNK_SIZE][CHUNK_SIZE];
 
     public HeightmapStep(Chunk region) {
         super(region);
@@ -22,25 +22,22 @@ public class HeightmapStep extends GenerationStep<Chunk> {
     public void generate() {
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int y = 0; y < CHUNK_SIZE; y++) {
-                heightmap[x][y] = 100 * world.getNoise("heightmap").fbm2d(x + region.worldX(), y + region.worldY(), 5, .001);
-                boolean isElevated = .4 > world.getNoise("isElevated").fbm2d(x + region.worldX(), y + region.worldY(), 2, .002);
-                if (isElevated) {
-                    heightmap[x][y] += Math.max(0,
-                            -20 + 50 * world.getNoise("elevated").fbm2d(x + region.worldX(), y + region.worldY(), 2, .005));
+                double dryness = Math.pow(2 * fbm("riverness", x, y, 2, .001) - 1, 2);
+                double altitude = (dryness + .2) * Math.pow(fbm("altitude", x, y, 5, .001), 3) + .05;
+                heightmap[x][y] = 300 * altitude * 1;//fbm("heightmap", x, y, 3, .005);
+                heightmap[x][y] += 50 * Math.pow(altitude, 3) * fbm("heightmapDetail", x, y, 3, .05);
+                if (.3 > fbm("isElevated", x, y, 2, .002)) {
+                    heightmap[x][y] += Math.max(0, -10 + 50 * Math.pow(dryness, .2) * fbm("elevated", x, y, 2, .005));
+                }
+                if (rivermap[x][y] = dryness < .001) {
+                    double c = fbm("riverCliffs", x, y, 2, .01);
+                    heightmap[x][y] -= c * 4;
                 }
             }
         }
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-            for (int y = 0; y < CHUNK_SIZE; y++) {
-                double d = 2 * world.getNoise("rivermap").fbm2d(x + region.worldX(), y + region.worldY(), 2, .003) - 1;
-                rivermap[x][y] = 1;//d * d;
-                if (rivermap[x][y] < .005) {
-                    heightmap[x][y] = 0;
-                } else {
-                    double c = world.getNoise("canyons").fbm2d(x + region.worldX(), y + region.worldY(), 2, .01);
-                    heightmap[x][y] *= Math.pow(rivermap[x][y], c + .1);
-                }
-            }
-        }
+    }
+
+    private double fbm(String name, int x, int y, int octaves, double frequency) {
+        return world.getNoise(name).fbm2d(x + region.worldX(), y + region.worldY(), octaves, frequency);
     }
 }

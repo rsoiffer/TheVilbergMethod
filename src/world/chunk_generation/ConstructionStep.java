@@ -34,7 +34,7 @@ public class ConstructionStep extends GenerationStep<Chunk> {
             for (int y = 0; y < CHUNK_SIZE; y++) {
                 int worldX = x + region.worldX(), worldY = y + region.worldY();
                 int z = world.getFlattenedHeightmap(worldX, worldY);
-                if (world.getRivermap(worldX, worldY) < .005) {
+                if (world.getRivermap(worldX, worldY)) {
                     blocks.setRangeInfinite(x, y, z, new Vec3d(.3, .6, 1));
                 } else {
                     Vec3d colorNoise = new Vec3d(colorR.fbm2d(worldX, worldY, 2, .01), colorG.fbm2d(worldX, worldY, 2, .01), colorB.fbm2d(worldX, worldY, 2, .01));

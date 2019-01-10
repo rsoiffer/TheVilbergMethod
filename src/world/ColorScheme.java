@@ -14,6 +14,6 @@ public class ColorScheme {
     public static final Vec3d SLATE = new Vec3d(.5, .1, .1);
     public static final Vec3d STONE = new Vec3d(.6, .6, .6);
 
-    public static final Function<Vec3d, Vec3d> LAND_FUNC = v -> new Vec3d(.02, 1, .01).add(v.mul(new Vec3d(.6, 0, .6)));
+    public static final Function<Vec3d, Vec3d> LAND_FUNC = v -> new Vec3d(0, 1, 0).add(v.mul(new Vec3d(1, 0, .6)));
     public static final Function<Double, Vec3d> LEAF_FUNC = d -> new Vec3d(d * .8, .7 - d * .5, .1);
 }

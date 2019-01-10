@@ -27,11 +27,13 @@ public class Wall extends Structure {
             for (int i = base.x; i <= base.maxX(); i++) {
                 for (int j = base.y; j <= base.maxY(); j++) {
                     int z = chunk.world.getFlattenedHeightmap(base.centerX(), j) + height;
-                    blocks.setRange(i, j, chunk.world.getFlattenedHeightmap(i, j) + 1, z, STONE);
-                    if (i > base.x && i < base.maxX()) {
-                        blocks.set(i, j, z, PLANKS);
-                    } else {
-                        blocks.setRange(i, j, z + 1, z + 1 + mod(j, 2), STONE);
+                    if (chunk.world.getFlattenedHeightmap(i, j) + 1 <= z) {
+                        blocks.setRange(i, j, chunk.world.getFlattenedHeightmap(i, j) + 1, z, STONE);
+                        if (i > base.x && i < base.maxX()) {
+                            blocks.set(i, j, z, PLANKS);
+                        } else {
+                            blocks.setRange(i, j, z + 1, z + 1 + mod(j, 2), STONE);
+                        }
                     }
                 }
             }

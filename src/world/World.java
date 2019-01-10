@@ -83,7 +83,7 @@ public class World extends Behavior {
         return noiseMap.get(name);
     }
 
-    public double getRivermap(int x, int y) {
+    public boolean getRivermap(int x, int y) {
         return chunkManager.get(new Vec3d(x, y, 0), HeightmapStep.class).rivermap[mod(x, CHUNK_SIZE)][mod(y, CHUNK_SIZE)];
     }
 
