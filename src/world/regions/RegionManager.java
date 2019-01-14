@@ -39,10 +39,7 @@ public class RegionManager<U extends AbstractRegion> {
     }
 
     public <T extends GenerationStep<U>> T get(RegionPos pos, Class<T> c) {
-        if (!regions.containsKey(pos)) {
-            regions.putIfAbsent(pos, constructor.apply(world, pos));
-        }
-        return regions.get(pos).require(c);
+        return regions.compute(pos, (k, v) -> v == null ? constructor.apply(world, pos) : v).require(c);
     }
 
     public RegionPos getPos(Vec3d pos) {
