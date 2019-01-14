@@ -1,7 +1,7 @@
 #version 330
 
 uniform vec4 color;
-
+uniform vec3 cameraPos;
 uniform float time;
 
 in vec3 fragColor;
@@ -40,13 +40,11 @@ vec4 permute(vec4 x) {
      return mod289(((x*34.0)+1.0)*x);
 }
 
-vec4 taylorInvSqrt(vec4 r)
-{
+vec4 taylorInvSqrt(vec4 r) {
   return 1.79284291400159 - 0.85373472095314 * r;
 }
 
-float snoise(vec3 v)
-  {
+float snoise(vec3 v) {
   const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
   const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
 
@@ -118,21 +116,26 @@ float snoise(vec3 v)
   m = m * m;
   return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
                                 dot(p2,x2), dot(p3,x3) ) );
-  }
+}
 
 
 
 
 void main() {
     float correctedOcclusion = pow(fragOcclusion, 2.2);
-    if (fragColor.b >= .999) {
+    vec3 c = fragColor;
+
+    // Flowing water
+    if (c.b >= .999) {
         vec3 noiseInput = fragPos * .2 + vec3(time, time, time) * .2;
         float x = snoise(noiseInput) + .5*snoise(2*noiseInput);
-        // x *= pow(fragOcclusion, -2);
-        vec3 waterColor = vec3(.3 + x*.1, .6 + x*.1, 1);
-        finalColor = vec4(waterColor * correctedOcclusion, 1) * color;
-    } else {
-        finalColor = vec4(fragColor * correctedOcclusion, 1) * color;
+        c += x * vec3(.1, .1, 0);
     }
-    finalColor = mix(vec4(.4, .7, 1., 1.), finalColor, fragFog);
+
+    /* vec3 ray = fragPos - cameraPos;
+    float fogDensity = exp(-cameraPos.z*.01) * (1.0-exp(-ray.z*.01)) / (ray.z / length(ray));
+    float fogAmount = 1 - exp(-fogDensity); */
+
+    finalColor = vec4(c * correctedOcclusion, 1) * color;
+    finalColor = mix(finalColor, vec4(.4, .7, 1., 1.), fragFog);
 }

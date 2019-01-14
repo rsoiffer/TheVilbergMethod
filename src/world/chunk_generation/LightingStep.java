@@ -19,7 +19,7 @@ public class LightingStep extends GenerationStep<Chunk> {
     static final LightFunc DARK_LF = new LightFunc(0, 0);
     static final LightFunc SUNLIGHT_LF = new LightFunc(SUNLIGHT, 0);
 
-    public RLEStorage<LightFunc> light = new RLEArrayStorage(CHUNK_SIZE, new LightFuncConverter());
+    public final RLEStorage<LightFunc> light = new RLEArrayStorage(CHUNK_SIZE, new LightFuncConverter());
 
     public LightingStep(Chunk region) {
         super(region);
@@ -33,8 +33,7 @@ public class LightingStep extends GenerationStep<Chunk> {
     @Override
     public void generate() {
         RLEStorage<Vec3d> chunkBlocks = region.require(ConstructionStep.class).blocks;
-        synchronized (LIGHTING_LOCK) {
-            light = new RLEArrayStorage(CHUNK_SIZE, new LightFuncConverter());
+        synchronized (light) {
             for (int x = 0; x < CHUNK_SIZE; x++) {
                 for (int y = 0; y < CHUNK_SIZE; y++) {
                     int z = chunkBlocks.columnAt(x, y).maxPos();

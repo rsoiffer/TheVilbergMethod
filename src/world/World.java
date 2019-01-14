@@ -5,6 +5,7 @@ import engine.Core;
 import engine.Layer;
 import static engine.Layer.RENDER3D;
 import graphics.Camera;
+import graphics.Camera.Camera3d;
 import static graphics.Color.WHITE;
 import static graphics.voxels.VoxelModel.MODEL_SHADER;
 import graphics.voxels.VoxelRenderer;
@@ -38,7 +39,7 @@ import world.regions.RegionPos;
 public class World extends Behavior {
 
     public static final double FOG_MULT = 2;
-    public static final int RENDER_DISTANCE = 500;
+    public static final int RENDER_DISTANCE = 750;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 500;
 
     public final long seed = new Random().nextLong();
@@ -47,6 +48,7 @@ public class World extends Behavior {
 
     private final HashMap<String, Noise> noiseMap = new HashMap();
     private final HashSet<RegionPos> renderBorder = new HashSet();
+    private double timer;
 
     public Vec3d getBlock(Vec3d v) {
         return chunkManager.get(v, ConstructionStep.class).blocks.get(mod((int) v.x, CHUNK_SIZE), mod((int) v.y, CHUNK_SIZE), (int) v.z);
@@ -93,10 +95,9 @@ public class World extends Behavior {
         return RENDER3D;
     }
 
-    public double timer;
-
     @Override
     public void step() {
+        timer += Core.dt();
         ToDoubleFunction<RegionPos> distanceToChunk = rp -> Camera.camera3d.position
                 .sub(new Vec3d(rp.x + .5, rp.y + .5, 0).mul(CHUNK_SIZE)).setZ(0).length();
 
@@ -113,7 +114,7 @@ public class World extends Behavior {
         Optional<RegionPos> nearestUnloaded = renderBorder.stream().min(Comparator.comparingDouble(distanceToChunk));
         if (nearestUnloaded.isPresent()) {
             MODEL_SHADER.setUniform("maxFogDist", (float) (FOG_MULT * distanceToChunk.applyAsDouble(nearestUnloaded.get())));
-            timer += Core.dt();
+            MODEL_SHADER.setUniform("cameraPos", Camera3d.camera3d.position);
             MODEL_SHADER.setUniform("time", (float) timer);
         }
 

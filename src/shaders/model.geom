@@ -46,7 +46,7 @@ void main()
     vec3 pos = gl_in[0].gl_Position.xyz + OFFSET[normal[0]];
     vec3 dir1 = NORMAL_TO_DIR1[normal[0]];
     vec3 dir2 = NORMAL_TO_DIR2[normal[0]];
-    float fog = pow(.01, pow(length(modelViewMatrix * vec4(pos + dir1/2 + dir2/2, 1.)) / maxFogDist, 2));
+    float fog = 1 - pow(.01, pow(length(modelViewMatrix * vec4(pos + dir1/2 + dir2/2, 1.)) / maxFogDist, 2));
     mat4 mvp = projectionMatrix * modelViewMatrix;
 
     if (occlusion[0].x + occlusion[0].z < occlusion[0].y + occlusion[0].w) {

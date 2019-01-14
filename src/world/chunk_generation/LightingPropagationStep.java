@@ -12,7 +12,6 @@ import util.math.Vec3d;
 import util.rlestorage.RLEStorage;
 import world.World;
 import static world.chunk_generation.LightingStep.LARGE_Z;
-import static world.chunk_generation.LightingStep.LIGHTING_LOCK;
 import world.chunk_generation.LightingStep.LightFunc;
 import static world.chunk_generation.LightingStep.SUNLIGHT_LF;
 import world.regions.Chunk;
@@ -33,16 +32,14 @@ public class LightingPropagationStep extends GenerationStep<Chunk> {
     @Override
     public void generate() {
         RLEStorage<Vec3d> chunkBlocks = region.require(ConstructionStep.class).blocks;
-        synchronized (LIGHTING_LOCK) {
-            Queue<LightRay> toUpdate = new LinkedList();
-            for (int x = 0; x < CHUNK_SIZE; x++) {
-                for (int y = 0; y < CHUNK_SIZE; y++) {
-                    int z = chunkBlocks.columnAt(x, y).maxPos();
-                    toUpdate.add(new LightRay(region.worldX() + x, region.worldY() + y, z + 1, LARGE_Z, SUNLIGHT_LF));
-                }
+        Queue<LightRay> toUpdate = new LinkedList();
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int y = 0; y < CHUNK_SIZE; y++) {
+                int z = chunkBlocks.columnAt(x, y).maxPos();
+                toUpdate.add(new LightRay(region.worldX() + x, region.worldY() + y, z + 1, LARGE_Z, SUNLIGHT_LF));
             }
-            updateLighting(world, toUpdate);
         }
+        updateLighting(world, toUpdate);
     }
 
     private static void updateLighting(World world, Queue<LightRay> toUpdate) {
@@ -93,8 +90,10 @@ public class LightingPropagationStep extends GenerationStep<Chunk> {
 
         private void create(World world, Queue<LightRay> toUpdate) {
             toUpdate.add(this);
-            world.chunkManager.get(new Vec3d(x, y, 0), LightingStep.class).light
-                    .setRange(mod(x, CHUNK_SIZE), mod(y, CHUNK_SIZE), zMin, zMax, lf);
+            LightingStep ls = world.chunkManager.get(new Vec3d(x, y, 0), LightingStep.class);
+            synchronized (ls.light) {
+                ls.light.setRange(mod(x, CHUNK_SIZE), mod(y, CHUNK_SIZE), zMin, zMax, lf);
+            }
         }
 
         @Override

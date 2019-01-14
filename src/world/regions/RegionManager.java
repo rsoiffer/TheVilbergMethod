@@ -39,12 +39,10 @@ public class RegionManager<U extends AbstractRegion> {
     }
 
     public <T extends GenerationStep<U>> T get(RegionPos pos, Class<T> c) {
-        U region = regions.get(pos);
-        if (region == null) {
-            region = constructor.apply(world, pos);
-            regions.put(pos, region);
+        if (!regions.containsKey(pos)) {
+            regions.putIfAbsent(pos, constructor.apply(world, pos));
         }
-        return region.require(c);
+        return regions.get(pos).require(c);
     }
 
     public RegionPos getPos(Vec3d pos) {
@@ -90,17 +88,5 @@ public class RegionManager<U extends AbstractRegion> {
                 remove(pos);
             }
         }
-    }
-
-    private boolean shouldBeBorder(RegionPos pos, Class<? extends GenerationStep<U>> c) {
-        if (has(pos, c, false)) {
-            return false;
-        }
-        for (RegionPos rp : pos.nearby(1)) {
-            if (has(rp, c, false)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

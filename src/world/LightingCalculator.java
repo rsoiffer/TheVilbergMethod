@@ -9,34 +9,33 @@ import static world.chunk_generation.LightingStep.SUNLIGHT;
 
 public class LightingCalculator {
 
+    private static final int AO_SIZE = 3;
     private static final Vec3d DIRECTIONAL_LIGHTING_1 = new Vec3d(.92, .97, 1);
     private static final Vec3d DIRECTIONAL_LIGHTING_2 = new Vec3d(.88, .83, .8);
 
     public static float[] ambientOcclusion(World world, VoxelFaceInfo vfi, Vec3d dir) {
-        int size = 3;
-
         Vec3d pos = new Vec3d(vfi.x, vfi.y, vfi.z).add(dir);
         int normal = DIRS.indexOf(dir);
         Vec3d dir1 = NORMAL_TO_DIR1[normal];
         Vec3d dir2 = NORMAL_TO_DIR2[normal];
 
-        boolean[][] solid = new boolean[2 * size + 1][2 * size + 1];
-        double[][] lightLevel = new double[2 * size + 1][2 * size + 1];
-        for (int i = -size; i <= size; i++) {
-            for (int j = -size; j <= size; j++) {
+        boolean[][] solid = new boolean[2 * AO_SIZE + 1][2 * AO_SIZE + 1];
+        double[][] lightLevel = new double[2 * AO_SIZE + 1][2 * AO_SIZE + 1];
+        for (int i = -AO_SIZE; i <= AO_SIZE; i++) {
+            for (int j = -AO_SIZE; j <= AO_SIZE; j++) {
                 Vec3d v = pos.add(dir1.mul(i)).add(dir2.mul(j));
-                solid[i + size][j + size] = world.getBlock(v) != null;
-                lightLevel[i + size][j + size] = world.getLight(v);
+                solid[i + AO_SIZE][j + AO_SIZE] = world.getBlock(v) != null;
+                lightLevel[i + AO_SIZE][j + AO_SIZE] = world.getLight(v);
             }
         }
 
         float[] returnVals = new float[4];
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-                Vec3d total = aoQuadrant(size, solid, lightLevel, size + i, size + j, 1, 1)
-                        .add(aoQuadrant(size, solid, lightLevel, size + i - 1, size + j, -1, 1))
-                        .add(aoQuadrant(size, solid, lightLevel, size + i - 1, size + j - 1, -1, -1))
-                        .add(aoQuadrant(size, solid, lightLevel, size + i, size + j - 1, 1, -1));
+                Vec3d total = aoQuadrant(AO_SIZE, solid, lightLevel, AO_SIZE + i, AO_SIZE + j, 1, 1)
+                        .add(aoQuadrant(AO_SIZE, solid, lightLevel, AO_SIZE + i - 1, AO_SIZE + j, -1, 1))
+                        .add(aoQuadrant(AO_SIZE, solid, lightLevel, AO_SIZE + i - 1, AO_SIZE + j - 1, -1, -1))
+                        .add(aoQuadrant(AO_SIZE, solid, lightLevel, AO_SIZE + i, AO_SIZE + j - 1, 1, -1));
                 double totalLight = total.x;
                 double numEmpty = total.y;
                 double numSolid = total.z;
