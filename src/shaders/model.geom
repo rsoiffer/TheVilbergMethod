@@ -39,6 +39,7 @@ in vec4[] occlusion;
 out vec3 fragColor;
 out float fragOcclusion;
 out float fragFog;
+out vec3 fragPos;
 
 void main()
 {
@@ -49,24 +50,28 @@ void main()
     mat4 mvp = projectionMatrix * modelViewMatrix;
 
     if (occlusion[0].x + occlusion[0].z < occlusion[0].y + occlusion[0].w) {
+        fragPos = pos;
         gl_Position = mvp * vec4(pos, 1);
         fragColor = color[0];
         fragOcclusion = occlusion[0].x;
         fragFog = fog;
         EmitVertex();
 
+        fragPos = pos + dir1;
         gl_Position = mvp * vec4(pos + dir1, 1.);
         fragColor = color[0];
         fragOcclusion = occlusion[0].y;
         fragFog = fog;
         EmitVertex();
 
+        fragPos = pos + dir2;
         gl_Position = mvp * vec4(pos + dir2, 1.);
         fragColor = color[0];
         fragOcclusion = occlusion[0].w;
         fragFog = fog;
         EmitVertex();
 
+        fragPos = pos + dir1 + dir2;
         gl_Position = mvp * vec4(pos + dir1 + dir2, 1.);
         fragColor = color[0];
         fragOcclusion = occlusion[0].z;
@@ -74,24 +79,28 @@ void main()
         EmitVertex();
     }
     else {
+        fragPos = pos + dir1;
         gl_Position = mvp * vec4(pos + dir1, 1.);
         fragColor = color[0];
         fragOcclusion = occlusion[0].y;
         fragFog = fog;
         EmitVertex();
 
+        fragPos = pos;
         gl_Position = mvp * vec4(pos, 1);
         fragColor = color[0];
         fragOcclusion = occlusion[0].x;
         fragFog = fog;
         EmitVertex();
 
+        fragPos = pos + dir1 + dir2;
         gl_Position = mvp * vec4(pos + dir1 + dir2, 1.);
         fragColor = color[0];
         fragOcclusion = occlusion[0].z;
         fragFog = fog;
         EmitVertex();
 
+        fragPos = pos + dir2;
         gl_Position = mvp * vec4(pos + dir2, 1.);
         fragColor = color[0];
         fragOcclusion = occlusion[0].w;

@@ -1,6 +1,7 @@
 package world;
 
 import engine.Behavior;
+import engine.Core;
 import engine.Layer;
 import static engine.Layer.RENDER3D;
 import graphics.Camera;
@@ -36,7 +37,7 @@ import world.regions.RegionPos;
 
 public class World extends Behavior {
 
-    public static final double FOG_MULT = 10;
+    public static final double FOG_MULT = 2;
     public static final int RENDER_DISTANCE = 500;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 500;
 
@@ -92,6 +93,8 @@ public class World extends Behavior {
         return RENDER3D;
     }
 
+    public double timer;
+
     @Override
     public void step() {
         ToDoubleFunction<RegionPos> distanceToChunk = rp -> Camera.camera3d.position
@@ -110,6 +113,8 @@ public class World extends Behavior {
         Optional<RegionPos> nearestUnloaded = renderBorder.stream().min(Comparator.comparingDouble(distanceToChunk));
         if (nearestUnloaded.isPresent()) {
             MODEL_SHADER.setUniform("maxFogDist", (float) (FOG_MULT * distanceToChunk.applyAsDouble(nearestUnloaded.get())));
+            timer += Core.dt();
+            MODEL_SHADER.setUniform("time", (float) timer);
         }
 
         // Render chunks

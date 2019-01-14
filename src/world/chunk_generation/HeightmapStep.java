@@ -22,16 +22,15 @@ public class HeightmapStep extends GenerationStep<Chunk> {
     public void generate() {
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int y = 0; y < CHUNK_SIZE; y++) {
-                double dryness = Math.pow(2 * fbm("riverness", x, y, 2, .001) - 1, 2);
-                double altitude = (dryness + .2) * Math.pow(fbm("altitude", x, y, 5, .001), 3) + .05;
-                heightmap[x][y] = 300 * altitude * 1;//fbm("heightmap", x, y, 3, .005);
-                heightmap[x][y] += 50 * Math.pow(altitude, 3) * fbm("heightmapDetail", x, y, 3, .05);
-                if (.3 > fbm("isElevated", x, y, 2, .002)) {
-                    heightmap[x][y] += Math.max(0, -10 + 50 * Math.pow(dryness, .2) * fbm("elevated", x, y, 2, .005));
-                }
+                double dryness = Math.pow(2 * fbm("dryness", x, y, 2, .001) - 1, 2);
+                double altitude = (dryness + .2) * Math.pow(fbm("altitude", x, y, 5, .001), 3);
+                heightmap[x][y] = 300 * altitude;
+                heightmap[x][y] += 100 * Math.pow(altitude + .1, 2) * fbm("heightmapDetail", x, y, 4, .01);
+//                if (.3 > fbm("isElevated", x, y, 2, .002)) {
+//                    heightmap[x][y] += Math.max(0, -10 + 50 * Math.pow(dryness, .2) * fbm("elevated", x, y, 2, .01));
+//                }
                 if (rivermap[x][y] = dryness < .001) {
-                    double c = fbm("riverCliffs", x, y, 2, .01);
-                    heightmap[x][y] -= c * 4;
+                    heightmap[x][y] -= .5 + 4 * fbm("riverDepth", x, y, 2, .01);;
                 }
             }
         }

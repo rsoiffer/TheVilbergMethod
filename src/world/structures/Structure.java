@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import static util.math.MathUtils.floor;
 import static util.math.MathUtils.min;
+import static util.math.MathUtils.round;
 import static util.math.MathUtils.vecMap;
 import util.math.Vec3d;
 import util.rlestorage.IntConverter.Vec3dConverter;
@@ -52,6 +54,18 @@ public class Structure implements Comparable<Structure> {
         for (int i = r.x + 1; i < r.maxX(); i++) {
             for (int j = r.y + 1; j < r.maxY(); j++) {
                 blocks.set(i, j, z, color);
+            }
+        }
+    }
+
+    public void buildOval(Vec3d pos, Vec3d size, Vec3d color) {
+        for (int x = floor(pos.x - size.x); x < pos.x + size.x; x++) {
+            for (int y = floor(pos.y - size.y); y < pos.y + size.y; y++) {
+                double distSquared = pos.sub(new Vec3d(x, y, pos.z)).div(size).lengthSquared();
+                if (distSquared < 1) {
+                    double z = Math.sqrt(1 - distSquared) * size.z;
+                    blocks.setRange(x, y, round(pos.z - z), round(pos.z + z), color);
+                }
             }
         }
     }

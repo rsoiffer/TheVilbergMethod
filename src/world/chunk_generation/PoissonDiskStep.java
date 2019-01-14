@@ -13,7 +13,7 @@ import world.regions.RegionPos;
 
 public class PoissonDiskStep extends GenerationStep<Chunk> {
 
-    private static final double DENSITY = .01;
+    private static final double DENSITY = .05;
 
     private final TreeMap<Double, Vec2d> points = new TreeMap();
 
