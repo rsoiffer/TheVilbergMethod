@@ -123,19 +123,16 @@ float snoise(vec3 v) {
 
 void main() {
     float correctedOcclusion = pow(fragOcclusion, 2.2);
-    vec3 c = fragColor;
+    vec3 newFragColor = fragColor;
 
     // Flowing water
-    if (c.b >= .999) {
+    if (newFragColor.b >= .999) {
         vec3 noiseInput = fragPos * .2 + vec3(time, time, time) * .2;
         float x = snoise(noiseInput) + .5*snoise(2*noiseInput);
-        c += x * vec3(.1, .1, 0);
+        newFragColor += x * vec3(.1, .1, 0);
     }
 
-    /* vec3 ray = fragPos - cameraPos;
-    float fogDensity = exp(-cameraPos.z*.01) * (1.0-exp(-ray.z*.01)) / (ray.z / length(ray));
-    float fogAmount = 1 - exp(-fogDensity); */
-
-    finalColor = vec4(c * correctedOcclusion, 1) * color;
-    finalColor = mix(finalColor, vec4(.4, .7, 1., 1.), fragFog);
+    newFragColor = newFragColor * color.rgb * correctedOcclusion;
+    newFragColor = mix(newFragColor, vec3(0.4, 0.7, 1.0), fragFog);
+    finalColor = vec4(newFragColor, color.a);
 }

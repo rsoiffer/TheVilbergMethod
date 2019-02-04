@@ -32,7 +32,7 @@ public class StructureStep extends GenerationStep<Chunk> {
     @Override
     public void generate() {
         PoissonDiskStep poisson = region.require(PoissonDiskStep.class);
-        for (Vec2d v : poisson.getPoints(10)) {
+        for (Vec2d v : poisson.getPoints(50)) {
             if (!world.getRivermap(floor(v.x), floor(v.y))) {
                 structures.add(new Tree(region, v.x, v.y, 20 + random.nextInt(10)));
             }

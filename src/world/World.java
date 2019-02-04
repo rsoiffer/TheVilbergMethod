@@ -39,7 +39,7 @@ import world.regions.RegionPos;
 public class World extends Behavior {
 
     public static final double FOG_MULT = 2;
-    public static final int RENDER_DISTANCE = 750;
+    public static final int RENDER_DISTANCE = 500;
     public static final int UNLOAD_DISTANCE = RENDER_DISTANCE + 500;
 
     public final long seed = new Random().nextLong();

@@ -2,7 +2,6 @@ package world.chunk_generation;
 
 import static graphics.voxels.VoxelModel.MODEL_SHADER;
 import graphics.voxels.VoxelRenderer;
-import static graphics.voxels.VoxelRenderer.DIRS;
 import graphics.voxels.VoxelRenderer.VoxelRendererParams;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -38,17 +37,15 @@ public class RenderStep extends GenerationStep<Chunk> {
         VoxelRendererParams<Vec3d> params = new VoxelRendererParams();
         params.columnsToDraw = toDraw;
         params.shader = MODEL_SHADER;
-        params.vertexAttribSizes = Arrays.asList(3, 1, 3, 4);
+        params.vertexAttribSizes = Arrays.asList(3, 3, 4);
         params.columnAt = world::getBlockColumnAt;
         params.voxelFaceToData = (vfi, dir) -> {
-            int normal = DIRS.indexOf(dir);
             float r = (float) vfi.voxel.x;
             float g = (float) vfi.voxel.y;
             float b = (float) vfi.voxel.z;
             float[] ao = LightingCalculator.ambientOcclusion(world, vfi, dir);
             return new float[]{
                 vfi.x, vfi.y, vfi.z,
-                normal,
                 r, g, b,
                 ao[0], ao[1], ao[3], ao[2]
             };
