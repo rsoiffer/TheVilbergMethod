@@ -49,8 +49,8 @@ public class Player extends Behavior {
     @Override
     public void step() {
         // Look around
-        camera3d.horAngle -= Input.mouseDelta().x / 300;
-        camera3d.vertAngle += Input.mouseDelta().y / 300;
+        camera3d.horAngle -= Input.mouseDelta().x * 16. / 3;
+        camera3d.vertAngle -= Input.mouseDelta().y * 3;
         camera3d.vertAngle = clamp(camera3d.vertAngle, -1.55, 1.55);
         camera3d.position = position.position.add(new Vec3d(0, 0, physics.crouch ? .8 : 1.4));;
 
