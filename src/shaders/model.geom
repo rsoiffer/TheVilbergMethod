@@ -26,8 +26,11 @@ vec3 NORMAL_TO_DIR2[6] = vec3[](
 );
 
 uniform float maxFogDist = 1000;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
+//uniform mat4 modelViewMatrix;
+//uniform mat4 projectionMatrix;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 uniform int normal;
 
 layout(points) in;
@@ -46,8 +49,8 @@ void main()
     vec3 pos = gl_in[0].gl_Position.xyz + OFFSET[normal];
     vec3 dir1 = NORMAL_TO_DIR1[normal];
     vec3 dir2 = NORMAL_TO_DIR2[normal];
-    float fog = 1 - pow(.01, pow(length(modelViewMatrix * vec4(pos + dir1/2 + dir2/2, 1.)) / maxFogDist, 2));
-    mat4 mvp = projectionMatrix * modelViewMatrix;
+    float fog = 1 - pow(.01, pow(length(model * view * vec4(pos + dir1/2 + dir2/2, 1.)) / maxFogDist, 2));
+    mat4 mvp = projection * view * model;
 
     if (occlusion[0].x + occlusion[0].z < occlusion[0].y + occlusion[0].w) {
         gl_Position = mvp * vec4(pos, 1);

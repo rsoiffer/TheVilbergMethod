@@ -6,6 +6,7 @@ import engine.Core;
 import engine.Input;
 import static engine.Layer.PREUPDATE;
 import static engine.Layer.UPDATE;
+import engine.Settings;
 import graphics.Camera;
 import graphics.opengl.Framebuffer;
 import graphics.voxels.VoxelModel;
@@ -17,6 +18,7 @@ import world.World;
 public class Main {
 
     public static void main(String[] args) {
+        Settings.SHOW_CURSOR = false;
         Core.init();
 
         new FPSBehavior().create();
@@ -28,7 +30,7 @@ public class Main {
 
         UPDATE.onStep(() -> {
             if (Input.keyJustPressed(GLFW_KEY_ESCAPE)) {
-                Core.stopGame();
+                Core.stopGame(); 
             }
         });
 
